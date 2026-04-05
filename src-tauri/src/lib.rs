@@ -428,7 +428,7 @@ async fn disable_telemetry() -> Result<String, String> {
                 match key.set_value("AllowTelemetry", &0u32) {
                     Ok(_) => results.push("AllowTelemetry set to 0 (disabled)".to_string()),
                     Err(e) if e.kind() == ErrorKind::PermissionDenied => {
-                        results.push("DataCollection: Requires TrustedInstaller privileges".to_string());
+                        results.push("⚠️ Please run SysForge as Administrator to use this feature".to_string());
                     }
                     Err(e) => errors.push(format!("Failed to set AllowTelemetry: {}", e)),
                 }
@@ -437,7 +437,7 @@ async fn disable_telemetry() -> Result<String, String> {
                 results.push("DataCollection key: Already disabled or not present".to_string());
             }
             Err(e) if e.kind() == ErrorKind::PermissionDenied => {
-                results.push("DataCollection: Requires TrustedInstaller privileges".to_string());
+                results.push("⚠️ Please run SysForge as Administrator to use this feature".to_string());
             }
             Err(e) => errors.push(format!(
                 "Cannot open DataCollection key: {}", e
@@ -453,7 +453,7 @@ async fn disable_telemetry() -> Result<String, String> {
                     match key.set_value("Start", &4u32) {
                         Ok(_) => Ok(format!("{} disabled (Start=4)", name)),
                         Err(e) if e.kind() == ErrorKind::PermissionDenied => {
-                            Ok(format!("{}: Requires TrustedInstaller privileges", name))
+                            Ok("⚠️ Please run SysForge as Administrator to use this feature".to_string())
                         }
                         Err(e) => Err(Some(format!("Failed to disable {}: {}", name, e))),
                     }
@@ -462,7 +462,7 @@ async fn disable_telemetry() -> Result<String, String> {
                     Ok(format!("{}: Already disabled or not present", name))
                 }
                 Err(e) if e.kind() == ErrorKind::PermissionDenied => {
-                    Ok(format!("{}: Requires TrustedInstaller privileges", name))
+                    Ok("⚠️ Please run SysForge as Administrator to use this feature".to_string())
                 }
                 Err(e) => Err(Some(format!(
                     "Cannot open {} key: {}", name, e
@@ -574,7 +574,7 @@ async fn disable_gamer_mode() -> Result<String, String> {
                 } else {
                     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
                     if stderr.contains("Access is denied") || stderr.contains("Access Denied") {
-                        Err("Access Denied: Please run SysForge Pro as Administrator.".to_string())
+                        Err("⚠️ Please run SysForge as Administrator to use this feature".to_string())
                     } else {
                         Err(format!("Failed to restore Balanced plan: {}", stderr))
                     }
@@ -623,7 +623,7 @@ async fn optimize_network() -> Result<String, String> {
                 if output.status.success() {
                     results.push(format!("✓ DNS Cache Flushed: {}", stdout));
                 } else if combined.contains("Access is denied") || combined.contains("Access Denied") {
-                    results.push("✗ DNS Flush failed: Access Denied. Please run as Administrator.".to_string());
+                    results.push("⚠️ Please run SysForge as Administrator to use this feature".to_string());
                 } else {
                     results.push(format!("⚠ DNS Flush: {}", if stderr.is_empty() { stdout } else { stderr }));
                 }
@@ -641,7 +641,7 @@ async fn optimize_network() -> Result<String, String> {
                 if output.status.success() {
                     results.push("✓ Winsock catalog reset successfully".to_string());
                 } else if combined.contains("Access is denied") || combined.contains("Access Denied") || combined.contains("requires elevation") {
-                    results.push("✗ Winsock reset failed: Access Denied. Please run as Administrator.".to_string());
+                    results.push("⚠️ Please run SysForge as Administrator to use this feature".to_string());
                 } else {
                     results.push(format!("⚠ Winsock reset: {}", if stderr.is_empty() { stdout } else { stderr }));
                 }
@@ -659,7 +659,7 @@ async fn optimize_network() -> Result<String, String> {
                 if output.status.success() || combined.contains("Resetting") || combined.contains("Restart the computer to complete this action") {
                     results.push("✓ TCP/IP stack reset successfully".to_string());
                 } else if combined.contains("Access is denied") || combined.contains("Access Denied") || combined.contains("requires elevation") {
-                    results.push("✗ TCP/IP reset failed: Access Denied. Please run as Administrator.".to_string());
+                    results.push("⚠️ Please run SysForge as Administrator to use this feature".to_string());
                 } else {
                     let err_msg = if stderr.is_empty() { stdout } else { stderr };
                     results.push(format!("⚠ TCP/IP reset: {}", err_msg));
