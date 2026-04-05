@@ -573,7 +573,11 @@ async fn disable_gamer_mode() -> Result<String, String> {
                     Ok("Restored normal system performance (Balanced mode).".to_string())
                 } else {
                     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-                    Err(format!("Failed to restore Balanced plan: {}", stderr))
+                    if stderr.contains("Access is denied") || stderr.contains("Access Denied") {
+                        Err("Access Denied: Please run SysForge Pro as Administrator.".to_string())
+                    } else {
+                        Err(format!("Failed to restore Balanced plan: {}", stderr))
+                    }
                 }
             }
             Err(e) => Err(format!("Failed to execute powercfg: {}", e)),
@@ -613,10 +617,14 @@ async fn optimize_network() -> Result<String, String> {
         match Command::new("ipconfig").arg("/flushdns").creation_flags(0x08000000).output() {
             Ok(output) => {
                 let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                let combined = format!("{} {}", stdout, stderr);
+                
                 if output.status.success() {
                     results.push(format!("✓ DNS Cache Flushed: {}", stdout));
+                } else if combined.contains("Access is denied") || combined.contains("Access Denied") {
+                    results.push("✗ DNS Flush failed: Access Denied. Please run as Administrator.".to_string());
                 } else {
-                    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
                     results.push(format!("⚠ DNS Flush: {}", if stderr.is_empty() { stdout } else { stderr }));
                 }
             }
@@ -626,11 +634,16 @@ async fn optimize_network() -> Result<String, String> {
         // 2. Reset Winsock catalog
         match Command::new("netsh").args(["winsock", "reset"]).creation_flags(0x08000000).output() {
             Ok(output) => {
+                let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                let combined = format!("{} {}", stdout, stderr);
+                
                 if output.status.success() {
                     results.push("✓ Winsock catalog reset successfully".to_string());
+                } else if combined.contains("Access is denied") || combined.contains("Access Denied") || combined.contains("requires elevation") {
+                    results.push("✗ Winsock reset failed: Access Denied. Please run as Administrator.".to_string());
                 } else {
-                    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-                    results.push(format!("⚠ Winsock reset: {} (may require Admin)", stderr));
+                    results.push(format!("⚠ Winsock reset: {}", if stderr.is_empty() { stdout } else { stderr }));
                 }
             }
             Err(e) => results.push(format!("✗ Winsock reset failed: {}", e)),
@@ -645,9 +658,11 @@ async fn optimize_network() -> Result<String, String> {
                 
                 if output.status.success() || combined.contains("Resetting") || combined.contains("Restart the computer to complete this action") {
                     results.push("✓ TCP/IP stack reset successfully".to_string());
+                } else if combined.contains("Access is denied") || combined.contains("Access Denied") || combined.contains("requires elevation") {
+                    results.push("✗ TCP/IP reset failed: Access Denied. Please run as Administrator.".to_string());
                 } else {
                     let err_msg = if stderr.is_empty() { stdout } else { stderr };
-                    results.push(format!("⚠ TCP/IP reset: {} (may require Admin)", err_msg));
+                    results.push(format!("⚠ TCP/IP reset: {}", err_msg));
                 }
             }
             Err(e) => results.push(format!("✗ TCP/IP reset failed: {}", e)),
