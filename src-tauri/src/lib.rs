@@ -519,6 +519,7 @@ async fn enable_gamer_mode() -> Result<String, String> {
     #[cfg(windows)]
     {
         use std::process::Command;
+        use std::os::windows::process::CommandExt;
         
         let mut killed_count = 0;
         let targets = ["OneDrive.exe", "Skype.exe", "msedge.exe", "Discord.exe"];
@@ -527,6 +528,7 @@ async fn enable_gamer_mode() -> Result<String, String> {
         for target in targets.iter() {
             if let Ok(output) = Command::new("taskkill")
                 .args(["/F", "/IM", target])
+                .creation_flags(0x08000000)
                 .output()
             {
                 if output.status.success() {
@@ -538,6 +540,7 @@ async fn enable_gamer_mode() -> Result<String, String> {
         // 2. Set Power Plan to High Performance
         let _ = Command::new("powercfg")
             .args(["-setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"])
+            .creation_flags(0x08000000)
             .output();
             
         Ok(format!("Killed {} background processes.\nHigh Performance plan activated.", killed_count))
@@ -558,9 +561,11 @@ async fn disable_gamer_mode() -> Result<String, String> {
     #[cfg(windows)]
     {
         use std::process::Command;
+        use std::os::windows::process::CommandExt;
 
         match Command::new("powercfg")
             .args(["-setactive", "381b4222-f694-41f0-9685-ff5bb260df2e"])
+            .creation_flags(0x08000000)
             .output()
         {
             Ok(output) => {
@@ -600,11 +605,12 @@ async fn optimize_network() -> Result<String, String> {
     #[cfg(windows)]
     {
         use std::process::Command;
+        use std::os::windows::process::CommandExt;
 
         let mut results: Vec<String> = Vec::new();
 
         // 1. Flush DNS cache
-        match Command::new("ipconfig").arg("/flushdns").output() {
+        match Command::new("ipconfig").arg("/flushdns").creation_flags(0x08000000).output() {
             Ok(output) => {
                 let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 if output.status.success() {
@@ -618,7 +624,7 @@ async fn optimize_network() -> Result<String, String> {
         }
 
         // 2. Reset Winsock catalog
-        match Command::new("netsh").args(["winsock", "reset"]).output() {
+        match Command::new("netsh").args(["winsock", "reset"]).creation_flags(0x08000000).output() {
             Ok(output) => {
                 if output.status.success() {
                     results.push("✓ Winsock catalog reset successfully".to_string());
@@ -631,7 +637,7 @@ async fn optimize_network() -> Result<String, String> {
         }
 
         // 3. Reset TCP/IP stack
-        match Command::new("netsh").args(["int", "ip", "reset"]).output() {
+        match Command::new("netsh").args(["int", "ip", "reset"]).creation_flags(0x08000000).output() {
             Ok(output) => {
                 let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
